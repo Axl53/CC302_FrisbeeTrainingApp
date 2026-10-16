@@ -10,13 +10,16 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.3.2
+  http: ^1.2.2
 
 dev_dependencies:
+  flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/frisbee.png
+    - pubspec.yaml
+    - assets/images/frisbee_disc.jpg
 

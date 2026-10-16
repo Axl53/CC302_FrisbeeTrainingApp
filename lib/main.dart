@@ -1,4 +1,15 @@
 import 'dart:convert';
+import 'settings/app_settings.dart';
+import 'settings/settings_screen.dart';
+import 'ui/app_theme.dart';
+import 'ui/disc_photo.dart';
+import 'drill.dart';
+import 'drills_list.dart';
+import 'drills_api.dart';
+import 'ui/discfit_widgets.dart';
+import 'ui/training_cards.dart';
+export 'ui/training_cards.dart';
+export 'drill.dart';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,153 +18,62 @@ void main() {
   runApp(const FrisbeeApp());
 }
 
-const primaryColor = Color(0xff2b8553);
+const primaryColor = forest;
 const darkGreen = Color(0xff173f32);
 const borderColor = Color(0xffe1e9e4);
 
-// STATELESS WIDGET: application and consistent theme.
-class FrisbeeApp extends StatelessWidget {
-  const FrisbeeApp({super.key});
+// App-wide preferences live above the Navigator so every route updates immediately.
+class FrisbeeApp extends StatefulWidget {
+  const FrisbeeApp({super.key, this.drillsApi});
+  final DrillsApi? drillsApi;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DiscFit',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-        ),
-        scaffoldBackgroundColor: const Color(0xfff8f9f7),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xfff8f9f7),
-          foregroundColor: darkGreen,
-          elevation: 0,
-          centerTitle: false,
-        ),
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(
-            fontSize: 15,
-            height: 1.5,
-            color: Color(0xff43574e),
-          ),
-          titleLarge: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: darkGreen,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: borderColor),
-          ),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(48, 52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(48, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-      ),
-      home: const TrainingHome(),
-    );
+  State<FrisbeeApp> createState() => _FrisbeeAppState();
+}
+
+class _FrisbeeAppState extends State<FrisbeeApp> {
+  final settings = AppSettings();
+  bool ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    settings.load().then((_) {
+      if (mounted) setState(() => ready = true);
+    });
   }
+
+  @override
+  void dispose() {
+    settings.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SettingsScope(
+        settings: settings,
+        child: ListenableBuilder(
+            listenable: settings,
+            builder: (context, _) => MaterialApp(
+                  title: 'DiscFit',
+                  debugShowCheckedModeBanner: false,
+                  theme: discFitTheme(Brightness.light),
+                  darkTheme: discFitTheme(Brightness.dark),
+                  themeMode: settings.themeMode,
+                  builder: (context, child) => MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                        textScaler: PreferenceTextScaler(
+                            MediaQuery.textScalerOf(context),
+                            settings.largeText ? 1.2 : 1)),
+                    child: child!,
+                  ),
+                  home: ready
+                      ? TrainingHome(drillsApi: widget.drillsApi)
+                      : const Scaffold(
+                          body: Center(child: CircularProgressIndicator())),
+                )),
+      );
 }
-
-// DATA MODEL: training drill.
-class Drill {
-  final String title;
-  final String level;
-  final int minutes;
-  final String instructions;
-
-  const Drill(
-    this.title,
-    this.level,
-    this.minutes,
-    this.instructions,
-  );
-}
-
-const drills = [
-  Drill(
-    'Backhand Throw',
-    'Beginner',
-    15,
-    '1. Warm up your wrists and shoulders.\n'
-        '2. Hold the disc with your thumb on top.\n'
-        '3. Stand sideways toward your partner.\n'
-        '4. Step and release the disc flat.\n'
-        '5. Practice 20 short throws, focusing on accuracy.',
-  ),
-  Drill(
-    'Forehand Throw',
-    'Beginner',
-    15,
-    '1. Place two fingers under the rim and your thumb on top.\n'
-        '2. Keep your elbow close to your body.\n'
-        '3. Flick your wrist while keeping the disc flat.\n'
-        '4. Practice 20 short throws with a partner.',
-  ),
-  Drill(
-    'Pancake Catch',
-    'Beginner',
-    10,
-    '1. Stand facing your partner.\n'
-        '2. Watch the disc as it approaches.\n'
-        '3. Catch it between your hands, one above and one below.\n'
-        '4. Complete 20 catches from a short distance.',
-  ),
-  Drill(
-    'Pivot and Pass',
-    'Intermediate',
-    20,
-    '1. Mark one foot as your pivot foot.\n'
-        '2. Keep it in place while stepping with your other foot.\n'
-        '3. Practice passes around a cone.\n'
-        '4. Complete 10 passes on each side.',
-  ),
-  Drill(
-    'Cutting and Footwork',
-    'Intermediate',
-    20,
-    '1. Set up three cones in a zigzag.\n'
-        '2. Jog toward a cone and change direction.\n'
-        '3. Accelerate into open space for a pass.\n'
-        '4. Repeat five times, resting between rounds.',
-  ),
-  Drill(
-    'Long Throw Accuracy',
-    'Advanced',
-    25,
-    '1. Warm up with short passes.\n'
-        '2. Place a target cone 20 meters away.\n'
-        '3. Throw toward the target using controlled power.\n'
-        '4. Record accurate throws out of 10 attempts.\n'
-        '5. Increase distance gradually.',
-  ),
-];
 
 // DATA MODEL: a scheduled training session.
 class Session {
@@ -223,15 +143,17 @@ String dateLabel(DateTime date) {
 
 // STATEFUL WIDGET: navigation, sessions, search and progress.
 class TrainingHome extends StatefulWidget {
-  const TrainingHome({super.key});
+  const TrainingHome({super.key, this.drillsApi});
+  final DrillsApi? drillsApi;
 
   @override
   State<TrainingHome> createState() => _TrainingHomeState();
 }
 
 class _TrainingHomeState extends State<TrainingHome> {
-  int tab = 0;
+  AppTab tab = AppTab.home;
 
+  final searchController = TextEditingController();
   String query = '';
   String level = 'All';
 
@@ -246,6 +168,12 @@ class _TrainingHomeState extends State<TrainingHome> {
   void initState() {
     super.initState();
     loadSessions();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   // Load saved sessions from the device.
@@ -375,7 +303,7 @@ class _TrainingHomeState extends State<TrainingHome> {
             ),
             TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.red.shade700,
+                foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Delete'),
@@ -396,11 +324,11 @@ class _TrainingHomeState extends State<TrainingHome> {
   @override
   Widget build(BuildContext context) {
     const titles = [
-      'DiscFit',
       'Training Drills',
       'My Schedule',
-      'My Profile',
+      'DiscFit',
       'My Progress',
+      'My Profile',
     ];
 
     Widget content;
@@ -420,13 +348,13 @@ class _TrainingHomeState extends State<TrainingHome> {
           if (saving) const LinearProgressIndicator(),
           Expanded(
             child: IndexedStack(
-              index: tab,
+              index: tab.index,
               children: [
-                buildHome(),
                 buildDrills(),
                 buildSchedule(),
-                const ProfileScreen(),
+                buildHome(),
                 buildProgress(),
+                ProfileScreen(onSettings: openSettings),
               ],
             ),
           ),
@@ -436,20 +364,24 @@ class _TrainingHomeState extends State<TrainingHome> {
 
     return Scaffold(
       appBar: AppBar(
-        centerTitle: tab == 0,
+        centerTitle: tab == AppTab.home,
         actions: [
+          if (tab == AppTab.home)
+            IconButton(
+                tooltip: 'Settings',
+                onPressed: openSettings,
+                icon: const Icon(Icons.settings_outlined)),
           IconButton(
             tooltip: 'My progress',
-            onPressed: () => setState(() => tab = 4),
+            onPressed: () => setState(() => tab = AppTab.progress),
             icon: const Icon(Icons.insights_outlined),
           ),
         ],
         title: Text(
-          titles[tab],
+          titles[tab.index],
           style: const TextStyle(
             fontSize: 26,
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
@@ -461,52 +393,43 @@ class _TrainingHomeState extends State<TrainingHome> {
           ),
         ),
       ),
-      floatingActionButton: !loading && loadError == null && tab == 2
-          ? FloatingActionButton.extended(
-              onPressed: saving ? null : () => editSession(),
-              icon: const Icon(Icons.add),
-              label: const Text('Add session'),
-            )
-          : null,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: tab,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: const Color(0xff718078),
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-        ),
-        onTap: (index) {
-          setState(() => tab = index);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports),
-            label: 'Drills',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            activeIcon: Icon(Icons.calendar_month),
-            label: 'Schedule',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: 'Progress',
-          ),
-        ],
+      floatingActionButton:
+          !loading && loadError == null && tab == AppTab.schedule
+              ? FloatingActionButton.extended(
+                  onPressed: saving ? null : () => editSession(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add session'),
+                )
+              : null,
+      bottomNavigationBar: DiscFitNavigation(
+        selected: tab,
+        onSelect: (destination) => setState(() => tab = destination),
       ),
     );
+  }
+
+  void openSettings() {
+    Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+            builder: (_) =>
+                SettingsScreen(clearHistory: clearTrainingHistory)));
+  }
+
+  Future<bool> clearTrainingHistory() async {
+    if (saving) return false;
+    setState(() => saving = true);
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      if (!await preferences.setString('sessions', '[]')) return false;
+      if (!mounted) return false;
+      setState(() => sessions = []);
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
   }
 
   void openTraining(Drill drill) {
@@ -521,10 +444,10 @@ class _TrainingHomeState extends State<TrainingHome> {
     return Row(children: [
       Expanded(
           child: Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xff121924)))),
+                  color: Theme.of(context).colorScheme.onSurface))),
       if (onSeeAll != null)
         TextButton(onPressed: onSeeAll, child: const Text('See All')),
     ]);
@@ -542,66 +465,20 @@ class _TrainingHomeState extends State<TrainingHome> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
-        Container(
-          constraints: const BoxConstraints(minHeight: 210),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xff102c24), Color(0xff377553)]),
-          ),
-          child: Stack(children: [
-            Positioned(
-                right: -45,
-                bottom: -35,
-                child: Icon(Icons.sports_handball,
-                    size: 235, color: Colors.white.withValues(alpha: 0.08))),
-            Positioned(
-                right: 12,
-                top: 38,
-                child: Transform.rotate(
-                    angle: -0.35,
-                    child: Image.asset('assets/frisbee.png', width: 145))),
-            const Padding(
-              padding: EdgeInsets.all(26),
-              child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Small Steps.\nLonger Throws.',
-                        style: TextStyle(
-                            fontSize: 30,
-                            height: 1.12,
-                            fontWeight: FontWeight.w800,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white)),
-                    SizedBox(height: 18),
-                    SizedBox(
-                        width: 48,
-                        child: Divider(color: Color(0xff87d48b), thickness: 4)),
-                    SizedBox(height: 8),
-                    Text('BETTER THROWS. A BRIGHTER GAME.',
-                        style: TextStyle(
-                            fontSize: 9,
-                            letterSpacing: 1.2,
-                            color: Color(0xffd4e8da))),
-                  ]),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 14),
+        const PageHeading('Ready for a little progress?',
+            'Your next great throw starts here.'),
+        const TrainingHero(),
+        const SizedBox(height: 24),
         sectionTitle('Today\'s Training',
             onSeeAll: () => setState(() {
                   query = '';
+                  searchController.clear();
                   level = 'All';
-                  tab = 1;
+                  tab = AppTab.drills;
                 })),
         const SizedBox(height: 8),
         Material(
-          color: const Color(0xffedf1eb),
+          color: softColor(context),
           borderRadius: BorderRadius.circular(18),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -609,15 +486,10 @@ class _TrainingHomeState extends State<TrainingHome> {
             child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
-                  Container(
-                      width: 78,
-                      height: 80,
-                      decoration: BoxDecoration(
-                          color: const Color(0xffd7e5d5),
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Image.asset('assets/frisbee.png')),
+                  const DiscPhoto(
+                      width: 78, height: 80, fit: BoxFit.cover, radius: 12),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -625,68 +497,70 @@ class _TrainingHomeState extends State<TrainingHome> {
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xff121924))),
-                        SizedBox(height: 8),
-                        Text('Beginner  |  15 min',
+                                color:
+                                    Theme.of(context).colorScheme.onSurface)),
+                        const SizedBox(height: 8),
+                        const Text('Beginner  |  15 min',
                             style: TextStyle(fontSize: 13)),
                       ])),
-                  const Icon(Icons.arrow_forward_rounded, color: darkGreen),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: accentColor(context)),
                 ])),
           ),
         ),
         const SizedBox(height: 22),
         sectionTitle('Training Categories'),
         const SizedBox(height: 12),
-        LayoutBuilder(
-            builder: (context, constraints) => GridView.count(
-                  crossAxisCount: constraints.maxWidth > 540 ? 6 : 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.94,
-                  children: categories
-                      .map((category) => Material(
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: const BorderSide(color: borderColor)),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                                onTap: () => setState(() {
-                                      query = category.$3;
-                                      level = 'All';
-                                      tab = 1;
-                                    }),
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(category.$2,
-                                          color: darkGreen, size: 36),
-                                      const SizedBox(height: 10),
-                                      Text(category.$1,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              height: 1.25,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xff121924))),
-                                    ])),
-                          ))
-                      .toList(),
-                )),
+        ResponsiveTiles(
+            minWidth: 105,
+            children: categories
+                .map((category) => Material(
+                      color: surfaceColor(context),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          side: BorderSide(color: edgeColor(context))),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => setState(() {
+                          query = category.$3;
+                          searchController.text = query;
+                          level = 'All';
+                          tab = AppTab.drills;
+                        }),
+                        child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(children: [
+                              Icon(category.$2,
+                                  color: accentColor(context), size: 28),
+                              const SizedBox(height: 12),
+                              Text(category.$1.replaceAll('\n', ' '),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13)),
+                            ])),
+                      ),
+                    ))
+                .toList()),
         const SizedBox(height: 20),
-        FilledButton(
-            onPressed: () => openTraining(drills.first),
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Start Training',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  SizedBox(width: 12),
-                  Icon(Icons.arrow_forward),
-                ])),
+        FilledButton.icon(
+          onPressed: () => openTraining(drills.first),
+          icon: const Icon(Icons.arrow_forward),
+          label: const Text('Start Training'),
+        ),
+        const SizedBox(height: 24),
+        sectionTitle('Make it a habit'),
+        const SizedBox(height: 12),
+        ResponsiveTiles(children: [
+          OutlinedButton.icon(
+              onPressed: saving ? null : () => editSession(),
+              icon: const Icon(Icons.add),
+              label: const Text('Plan practice')),
+          OutlinedButton.icon(
+              onPressed: () => setState(() => tab = AppTab.progress),
+              icon: const Icon(Icons.insights),
+              label: const Text('View progress')),
+        ]),
       ],
     );
   }
@@ -697,121 +571,144 @@ class _TrainingHomeState extends State<TrainingHome> {
       final matches = drills.where((drill) => drill.title == session.drill);
       return total + (matches.isEmpty ? 0 : matches.first.minutes);
     });
+    final ratio = sessions.isEmpty ? 0.0 : completed.length / sessions.length;
     return ListView(padding: const EdgeInsets.all(20), children: [
-      sectionTitle('Your Training Journey'),
-      const SizedBox(height: 16),
-      InfoCard(
-          title: 'Total Training Time',
-          text: '${(minutes / 60).toStringAsFixed(1)} hours'),
-      InfoCard(
-          title: 'Completed Workouts', text: '${completed.length} sessions'),
-      InfoCard(
-          title: 'Session Completion',
-          text: sessions.isEmpty
-              ? 'Plan your first session to begin tracking progress.'
-              : '${(completed.length / sessions.length * 100).round()}% of planned sessions'),
-      const SizedBox(height: 16),
+      const PageHeading(
+          'Your Training Journey', 'Every completed practice counts.'),
+      ResponsiveTiles(children: [
+        StatTile(
+            value: '${(minutes / 60).toStringAsFixed(1)} hours',
+            label: 'Total Training Time',
+            icon: Icons.timer_outlined),
+        StatTile(
+            value: '${completed.length} sessions',
+            label: 'Completed Workouts',
+            icon: Icons.task_alt),
+        StatTile(
+            value: '${sessions.length}',
+            label: 'Planned sessions',
+            icon: Icons.calendar_month_outlined),
+      ]),
+      const SizedBox(height: 20),
+      SurfaceCard(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        sectionTitle('Session Completion'),
+        const SizedBox(height: 12),
+        Text(sessions.isEmpty
+            ? 'Plan your first session to begin tracking progress.'
+            : '${(ratio * 100).round()}% of planned sessions'),
+        const SizedBox(height: 16),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: ratio),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 450),
+          builder: (context, value, _) => LinearProgressIndicator(
+              value: value,
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(8),
+              semanticsLabel: 'Session completion',
+              semanticsValue: '${(ratio * 100).round()}%'),
+        ),
+        const SizedBox(height: 12),
+        Text('${completed.length} of ${sessions.length} sessions completed'),
+      ])),
+      const SizedBox(height: 24),
       sectionTitle('Achievements'),
       const SizedBox(height: 12),
-      InfoCard(
-          title:
-              completed.isEmpty ? 'Your first workout awaits' : 'First Workout',
-          text: completed.isEmpty
-              ? 'Complete a scheduled practice to earn your first achievement.'
-              : 'You took the first step. Keep showing up!'),
-      const SizedBox(height: 20),
-      const Text(
-          'Progress isn\'t just longer throws.\nIt\'s a deeper love for the game.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 17)),
+      SurfaceCard(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(
+            completed.isEmpty
+                ? Icons.emoji_events_outlined
+                : Icons.emoji_events,
+            size: 32,
+            color: accentColor(context)),
+        const SizedBox(height: 12),
+        Text(completed.isEmpty ? 'Your first workout awaits' : 'First Workout',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 6),
+        Text(completed.isEmpty
+            ? 'Complete a scheduled practice to earn your first achievement.'
+            : 'You completed your first practice. Keep showing up!'),
+        if (completed.length >= 5) ...[
+          const SizedBox(height: 16),
+          const LabelBadge('Five practices completed',
+              icon: Icons.verified_outlined)
+        ],
+        if (minutes >= 60) ...[
+          const SizedBox(height: 12),
+          const LabelBadge('One hour of practice', icon: Icons.timer_outlined)
+        ],
+      ])),
       const SizedBox(height: 24),
       FilledButton.icon(
-          onPressed: () => setState(() => tab = 2),
+          onPressed: () => setState(() => tab = AppTab.schedule),
           icon: const Icon(Icons.calendar_month_outlined),
           label: const Text('Plan a training session')),
     ]);
   }
 
   Widget buildDrills() {
-    final filtered = drills.where((drill) {
-      final matchesSearch = drill.title.toLowerCase().contains(
-            query.trim().toLowerCase(),
-          );
-
-      final matchesLevel = level == 'All' || drill.level == level;
-
-      return matchesSearch && matchesLevel;
-    }).toList();
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() => query = value);
-                },
-                decoration: const InputDecoration(
-                  labelText: 'Search drills',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: level,
-                decoration: const InputDecoration(
-                  labelText: 'Difficulty',
-                ),
-                items: [
-                  'All',
-                  'Beginner',
-                  'Intermediate',
-                  'Advanced',
-                ].map((value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => level = value);
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: filtered.isEmpty
-              ? const MessageBox(
-                  message: 'No matching drills. '
-                      'Try another search or difficulty.',
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final drill = filtered[index];
-
-                    return DrillCard(
-                      drill: drill,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DrillDetails(drill: drill),
+    return LayoutBuilder(
+        builder: (context, constraints) => Column(
+              children: [
+                ConstrainedBox(
+                    constraints:
+                        BoxConstraints(maxHeight: constraints.maxHeight * 0.52),
+                    child: SingleChildScrollView(
+                        child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: searchController,
+                            onChanged: (value) {
+                              setState(() => query = value);
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Search drills',
+                              prefixIcon: Icon(Icons.search),
+                            ),
                           ),
-                        );
-                      },
-                    );
-                  },
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            key: ValueKey('difficulty-$level'),
+                            isExpanded: true,
+                            initialValue: level,
+                            decoration: const InputDecoration(
+                              labelText: 'Difficulty',
+                            ),
+                            items: [
+                              'All',
+                              'Beginner',
+                              'Intermediate',
+                              'Advanced',
+                            ].map((value) {
+                              return DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => level = value);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ))),
+                Expanded(
+                  child: tab == AppTab.drills
+                      ? DrillsList(
+                          query: query, level: level, api: widget.drillsApi)
+                      : const SizedBox.shrink(),
                 ),
-        ),
-      ],
-    );
+              ],
+            ));
   }
 
   Widget buildSchedule() {
@@ -831,11 +728,12 @@ class _TrainingHomeState extends State<TrainingHome> {
         final session = sorted[index];
 
         return Card(
-          elevation: 0,
-          color: Colors.white,
+          elevation: 1,
+          shadowColor: const Color(0x10194c38),
+          color: surfaceColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: borderColor),
+            side: BorderSide(color: edgeColor(context)),
           ),
           margin: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -848,41 +746,25 @@ class _TrainingHomeState extends State<TrainingHome> {
               children: [
                 Text(
                   session.drill,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: darkGreen,
+                    color: accentColor(context),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(dateLabel(session.date)),
+                LabelBadge(dateLabel(session.date),
+                    icon: Icons.calendar_today_outlined),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: session.completed
-                        ? const Color(0xffe8f4ed)
-                        : const Color(0xfffff3db),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    session.completed ? 'Completed' : 'Planned',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: session.completed
-                          ? darkGreen
-                          : const Color(0xff785600),
-                    ),
-                  ),
-                ),
+                LabelBadge(session.completed ? 'Completed' : 'Planned',
+                    icon: session.completed ? Icons.task_alt : Icons.schedule,
+                    warm: !session.completed),
                 if (session.notes.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(session.notes),
                 ],
+                const SizedBox(height: 16),
+                Divider(height: 1, color: edgeColor(context)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -917,7 +799,7 @@ class _TrainingHomeState extends State<TrainingHome> {
                     TextButton.icon(
                       onPressed: saving ? null : () => deleteSession(session),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xffb34040),
+                        foregroundColor: Theme.of(context).colorScheme.error,
                       ),
                       icon: const Icon(Icons.delete_outline),
                       label: const Text('Delete'),
@@ -929,206 +811,6 @@ class _TrainingHomeState extends State<TrainingHome> {
           ),
         );
       },
-    );
-  }
-}
-
-// CUSTOM REUSABLE STATELESS WIDGET.
-class InfoCard extends StatelessWidget {
-  final String title;
-  final String text;
-
-  const InfoCard({
-    super.key,
-    required this.title,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: darkGreen,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(text),
-        ],
-      ),
-    );
-  }
-}
-
-class DrillCard extends StatelessWidget {
-  final Drill drill;
-  final VoidCallback onTap;
-
-  const DrillCard({
-    super.key,
-    required this.drill,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = drill.level == 'Advanced'
-        ? Icons.bolt
-        : drill.level == 'Intermediate'
-            ? Icons.directions_run
-            : Icons.sports;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 6,
-      ),
-      child: Material(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: borderColor),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xffeaf4ee),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: primaryColor),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        drill.title,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: darkGreen,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${drill.level} • ${drill.minutes} min',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Color(0xff718078),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MessageBox extends StatelessWidget {
-  final String message;
-  final VoidCallback? action;
-
-  const MessageBox({
-    super.key,
-    required this.message,
-    this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: primaryColor,
-              size: 40,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
-            if (action != null) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: action,
-                child: const Text('Retry'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// NAVIGATION: opened when a drill card is tapped.
-class DrillDetails extends StatelessWidget {
-  final Drill drill;
-
-  const DrillDetails({
-    super.key,
-    required this.drill,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(drill.title)),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            InfoCard(
-              title: drill.level,
-              text: '${drill.minutes} minutes\n'
-                  'Equipment: frisbee, partner, cones if needed',
-            ),
-            InfoCard(
-              title: 'How to practice',
-              text: drill.instructions,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Use Schedule to plan this drill and '
-              'record your completed practice.',
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1217,12 +899,12 @@ class _SessionFormState extends State<SessionForm> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Text(
+              Text(
                 'Plan your practice',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: darkGreen,
+                  color: accentColor(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -1231,8 +913,8 @@ class _SessionFormState extends State<SessionForm> {
               ),
               const SizedBox(height: 24),
               DropdownButtonFormField<String>(
-                value: selectedDrill,
                 isExpanded: true,
+                initialValue: selectedDrill,
                 decoration: const InputDecoration(
                   labelText: 'Training drill',
                 ),
@@ -1291,7 +973,8 @@ class _SessionFormState extends State<SessionForm> {
 
 // Profile details are saved locally on this device.
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.onSettings});
+  final VoidCallback? onSettings;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -1395,18 +1078,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Your player profile',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
-            color: darkGreen,
+            color: accentColor(context),
           ),
         ),
         const SizedBox(height: 6),
-        const Text('Personalize your DiscFit training profile.'),
+        const Text('Make it yours. Your details stay on this device.'),
         const SizedBox(height: 20),
-        Form(
+        SurfaceCard(
+            child: Form(
           key: formKey,
           child: Column(
             children: [
@@ -1424,7 +1108,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: level,
+                isExpanded: true,
+                initialValue: level,
                 decoration: const InputDecoration(
                   labelText: 'Skill level',
                   prefixIcon: Icon(Icons.sports),
@@ -1462,8 +1147,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-        ),
+        )),
         const SizedBox(height: 16),
+        if (widget.onSettings != null) ...[
+          SurfaceCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Settings'),
+                subtitle: const Text('Appearance, text size and history'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: widget.onSettings,
+              )),
+          const SizedBox(height: 16),
+        ],
         const Text(
           'Your profile is saved on this device.',
           style: TextStyle(fontSize: 12),

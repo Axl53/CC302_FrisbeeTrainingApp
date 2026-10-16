@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "title": "Backhand Throw",
+    "level": "Beginner",
+    "minutes": 15,
+    "instructions": "1. Warm up your wrists and shoulders.\n2. Hold the disc with your thumb on top.\n3. Stand sideways toward your partner.\n4. Step and release the disc flat.\n5. Practice 20 short throws, focusing on accuracy."
+  },
+  {
+    "id": "2",
+    "title": "Forehand Throw",
+    "level": "Beginner",
+    "minutes": 15,
+    "instructions": "1. Place two fingers under the rim and your thumb on top.\n2. Keep your elbow close to your body.\n3. Flick your wrist while keeping the disc flat.\n4. Practice 20 short throws with a partner."
+  },
+  {
+    "id": "3",
+    "title": "Pancake Catch",
+    "level": "Beginner",
+    "minutes": 10,
+    "instructions": "1. Stand facing your partner.\n2. Watch the disc as it approaches.\n3. Catch it between your hands, one above and one below.\n4. Complete 20 catches from a short distance."
+  },
+  {
+    "id": "4",
+    "title": "Pivot and Pass",
+    "level": "Intermediate",
+    "minutes": 20,
+    "instructions": "1. Mark one foot as your pivot foot.\n2. Keep it in place while stepping with your other foot.\n3. Practice passes around a cone.\n4. Complete 10 passes on each side."
+  },
+  {
+    "id": "5",
+    "title": "Cutting and Footwork",
+    "level": "Intermediate",
+    "minutes": 20,
+    "instructions": "1. Set up three cones in a zigzag.\n2. Jog toward a cone and change direction.\n3. Accelerate into open space for a pass.\n4. Repeat five times, resting between rounds."
+  },
+  {
+    "id": "6",
+    "title": "Long Throw Accuracy",
+    "level": "Advanced",
+    "minutes": 25,
+    "instructions": "1. Warm up with short passes.\n2. Place a target cone 20 meters away.\n3. Throw toward the target using controlled power.\n4. Record accurate throws out of 10 attempts.\n5. Increase distance gradually."
+  }
+]

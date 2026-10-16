@@ -15,6 +15,8 @@ void main() {
     await tester.pumpWidget(const FrisbeeApp());
     await tester.pumpAndSettle();
     expect(find.text('DiscFit'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Training Categories'), 150,
+        scrollable: find.byType(Scrollable).first);
     expect(find.text('Training Categories'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Start Training'), 150,
@@ -27,6 +29,8 @@ void main() {
     await tester.tap(find.text('Progress'));
     await tester.pumpAndSettle();
     expect(find.text('0.0 hours'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Your first workout awaits'), 150,
+        scrollable: find.byType(Scrollable).first);
     expect(find.text('Your first workout awaits'), findsOneWidget);
 
     await tester.tap(find.text('Profile'));
