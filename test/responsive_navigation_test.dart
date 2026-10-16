@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frisbee_training/main.dart';
-import 'package:frisbee_training/drills_api.dart';
+
 import 'package:frisbee_training/ui/discfit_widgets.dart';
 
 void main() {
@@ -28,11 +26,7 @@ void main() {
               .toJson(),
         ])
       });
-      final client = MockClient((_) async => http.Response(
-          '[{"title":"API drill","level":"Beginner","minutes":10,"instructions":"Practice"}]',
-          200));
-      addTearDown(client.close);
-      await tester.pumpWidget(FrisbeeApp(drillsApi: DrillsApi(client)));
+      await tester.pumpWidget(const FrisbeeApp());
       await tester.pumpAndSettle();
       expect(
           tester
@@ -58,7 +52,7 @@ void main() {
             tab);
         expect(tester.takeException(), isNull, reason: tab.name);
         if (tab == AppTab.drills) {
-          expect(find.text('API drill'), findsOneWidget);
+          expect(find.text('Backhand Throw'), findsOneWidget);
         }
         if (tab == AppTab.schedule) {
           expect(find.text('Add session'), findsOneWidget);

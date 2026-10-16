@@ -5,7 +5,7 @@ import 'ui/app_theme.dart';
 import 'ui/disc_photo.dart';
 import 'drill.dart';
 import 'drills_list.dart';
-import 'drills_api.dart';
+import 'weather/weather_screen.dart';
 import 'ui/discfit_widgets.dart';
 import 'ui/training_cards.dart';
 export 'ui/training_cards.dart';
@@ -24,8 +24,7 @@ const borderColor = Color(0xffe1e9e4);
 
 // App-wide preferences live above the Navigator so every route updates immediately.
 class FrisbeeApp extends StatefulWidget {
-  const FrisbeeApp({super.key, this.drillsApi});
-  final DrillsApi? drillsApi;
+  const FrisbeeApp({super.key});
 
   @override
   State<FrisbeeApp> createState() => _FrisbeeAppState();
@@ -68,7 +67,7 @@ class _FrisbeeAppState extends State<FrisbeeApp> {
                     child: child!,
                   ),
                   home: ready
-                      ? TrainingHome(drillsApi: widget.drillsApi)
+                      ? const TrainingHome()
                       : const Scaffold(
                           body: Center(child: CircularProgressIndicator())),
                 )),
@@ -143,8 +142,7 @@ String dateLabel(DateTime date) {
 
 // STATEFUL WIDGET: navigation, sessions, search and progress.
 class TrainingHome extends StatefulWidget {
-  const TrainingHome({super.key, this.drillsApi});
-  final DrillsApi? drillsApi;
+  const TrainingHome({super.key});
 
   @override
   State<TrainingHome> createState() => _TrainingHomeState();
@@ -368,14 +366,23 @@ class _TrainingHomeState extends State<TrainingHome> {
         actions: [
           if (tab == AppTab.home)
             IconButton(
+                tooltip: 'Weather',
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                        builder: (_) => const WeatherScreen())),
+                icon: const Icon(Icons.cloud_outlined)),
+          if (tab == AppTab.home)
+            IconButton(
                 tooltip: 'Settings',
                 onPressed: openSettings,
                 icon: const Icon(Icons.settings_outlined)),
-          IconButton(
-            tooltip: 'My progress',
-            onPressed: () => setState(() => tab = AppTab.progress),
-            icon: const Icon(Icons.insights_outlined),
-          ),
+          if (tab != AppTab.home)
+            IconButton(
+              tooltip: 'My progress',
+              onPressed: () => setState(() => tab = AppTab.progress),
+              icon: const Icon(Icons.insights_outlined),
+            ),
         ],
         title: Text(
           titles[tab.index],
@@ -702,10 +709,7 @@ class _TrainingHomeState extends State<TrainingHome> {
                       ),
                     ))),
                 Expanded(
-                  child: tab == AppTab.drills
-                      ? DrillsList(
-                          query: query, level: level, api: widget.drillsApi)
-                      : const SizedBox.shrink(),
+                  child: DrillsList(query: query, level: level),
                 ),
               ],
             ));
