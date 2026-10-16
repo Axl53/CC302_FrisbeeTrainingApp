@@ -65,3 +65,21 @@ Before presenting, test weather with internet, then turn it off and demonstrate 
 Consistency: shared green theme and reusable controls. Visibility: labeled tabs, session status, weather time and progress. Feedback: loading indicators and snackbars. User control: cancel deletion, undo completion and retry requests. Error prevention: validated forms, constrained drill selection and confirmation before clearing history. Readability: scrolling layouts, responsive cards and device text scaling.
 
 StatefulWidget owns changing data (forms, weather and local sessions). StatelessWidget displays supplied data (cards, drill list and photo). The weather API demonstrates HTTP and JSON; SharedPreferences demonstrates local persistence.
+
+## iPhone demo with GitHub Pages
+
+Public demo URL after deployment: https://axl53.github.io/CC302_FrisbeeTrainingApp/
+
+Open the URL in Safari on your iPhone. No GitHub or ChatGPT login is required. Optionally use Share > Add to Home Screen to save a shortcut. The PC does not need to remain running.
+
+`.github/workflows/deploy-web.yml` runs analysis and tests, builds Flutter web for `/CC302_FrisbeeTrainingApp/`, and deploys through GitHub Pages. Push changes to `main` to update the demo. Check the repository's Actions tab for deployment status. GitHub Settings > Pages should use GitHub Actions as its publishing source.
+
+To reproduce the build locally:
+
+```powershell
+flutter build web --release --base-href /CC302_FrisbeeTrainingApp/
+```
+
+Internet is required to load the hosted app and fetch weather. Sessions, profile and settings remain local to the browser/device; they do not sync with the desktop app. Clearing browser website data can remove them. Physical iPhone/Safari behavior should be checked before your presentation.
+
+The earlier private Sites deployment is separate and is not used for this public demo. Its compiled deployment workspace remains ignored by Git.

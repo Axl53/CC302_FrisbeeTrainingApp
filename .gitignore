@@ -8,6 +8,7 @@ android/key.properties
 *.jks
 *.keystore
 .idea/
+hosted-discfit/
 
 backend/server.stdout.log
 backend/server.stderr.log
