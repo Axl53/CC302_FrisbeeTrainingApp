@@ -1,9 +1,9 @@
 # Drills REST API
 
-Python 3 standard library only; no packages or API key required. From the project root:
+Dart SDK libraries only (dart:io and dart:convert); no backend packages or API key required. Dart comes with Flutter. From the project root:
 
 ```powershell
-python backend/server.py
+dart run backend/server.dart
 ```
 
 Leave that terminal running. In a second terminal:
@@ -17,7 +17,7 @@ The app uses `http://localhost:8000` on web/iOS simulator and `http://10.0.2.2:8
 For a physical Android phone on the same Wi-Fi, bind the backend to your computer's network interface:
 
 ```powershell
-python backend/server.py --host 0.0.0.0
+dart run backend/server.dart --host 0.0.0.0
 flutter run --dart-define=API_BASE_URL=http://YOUR_PC_LAN_IP:8000
 ```
 
@@ -50,7 +50,7 @@ The Drills tab uses HTTP data. Home recommendations, scheduling options, and pro
 ## Verification
 
 ```powershell
-python -m unittest discover -s backend -v
+flutter test test/backend_test.dart
 flutter test
 ```
 

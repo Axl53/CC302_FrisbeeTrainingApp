@@ -1,6 +1,6 @@
 # Frisbee Training Program â€” CC 302
 
-A simple student project for beginners who want to learn frisbee drills and schedule practice. Plain Material UI, green theme, standard font, icons and a bundled frisbee image. No login is needed. The Drills tab uses a local Python REST backend (see backend/README.md). Schedules are stored on this device only.
+A simple student project for beginners who want to learn frisbee drills and schedule practice. Plain Material UI, green theme, standard font, icons and a bundled frisbee image. No login is needed. The Drills tab uses a local Dart REST backend (see backend/README.md). Schedules are stored on this device only.
 
 ## Run on Windows
 1. Install Flutter stable, Android Studio and an Android emulator (or enable USB debugging on an Android phone). Run `flutter doctor` and resolve Android toolchain issues.

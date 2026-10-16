@@ -9,8 +9,5 @@ android/key.properties
 *.keystore
 .idea/
 
-# Python backend cache
-__pycache__/
-*.pyc
 backend/server.stdout.log
 backend/server.stderr.log
